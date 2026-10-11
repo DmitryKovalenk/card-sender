@@ -2,7 +2,7 @@ package com.privatbank.cardsender;
 
 import com.privatbank.cardsender.domain.CreateCardInput;
 import com.privatbank.cardsender.domain.Operator;
-import com.privatbank.cardsender.dto.CardTypes;
+import com.privatbank.cardsender.domain.CardTypes;
 import com.privatbank.cardsender.service.CardService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

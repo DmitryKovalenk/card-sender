@@ -68,7 +68,8 @@ class LocalHttpLoggingFilterTests {
         String logs = messages();
         assertThat(logs).contains("HTTP request", "POST /api/orders/status/4444********0008",
                         "HTTP response", "status=201", "durationMs=", "GENERATED", "\"cardTypeId\":1")
-                .doesNotContain("380671234567", "4444440000000008", "secret-token", "secret-query");
+                .contains("380671234567")
+                .doesNotContain("4444440000000008", "secret-token", "secret-query");
         assertThat(appender.list.get(0).getArgumentArray()[0])
                 .isEqualTo(appender.list.get(1).getArgumentArray()[0]);
     }

@@ -4,6 +4,12 @@ import com.privatbank.cardsender.client.NovaPoshtaClient;
 import com.privatbank.cardsender.domain.DeliveryResult;
 import com.privatbank.cardsender.domain.Recipient;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
+import org.slf4j.LoggerFactory;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -26,12 +32,16 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 class NovaPoshtaClientTests {
+    private final ListAppender<ILoggingEvent> logs = new ListAppender<>();
+    private final Logger logger = (Logger) LoggerFactory.getLogger(NovaPoshtaClient.class);
     private MockRestServiceServer server;
     private NovaPoshtaClient client;
     private final Recipient recipient = new Recipient("Тест", "Клієнт", "380671234567", "Київ", "1");
 
     @BeforeEach
     void setup() {
+        logs.start();
+        logger.addAppender(logs);
         var builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
         var properties = new NovaPoshtaProperties(true, "test-key", URI.create("https://carrier.test/"),
@@ -127,4 +137,57 @@ class NovaPoshtaClientTests {
         server.verify();
     }
 
+
+    @AfterEach
+    void cleanupLogs() {
+        logger.detachAppender(logs);
+        logs.stop();
+    }
+
+    @Test
+    void rejectionDiagnosticsIncludeOriginalCarrierErrors() {
+        server.expect(requestTo("https://carrier.test/"))
+                .andRespond(withSuccess("""
+                        {"success":false,"errors":["Invalid warehouse; test-key; Тест; Клієнт; 380671234567\\nforged"]}
+                        """, MediaType.APPLICATION_JSON));
+        assertEquals(DeliveryResult.rejected(), client.send(recipient));
+        assertThat(logs.list).hasSize(1);
+        assertThat(logs.list.get(0).getFormattedMessage())
+                .contains("reason=REJECTED", "Invalid warehouse",
+                        "test-key", "Тест", "Клієнт", "380671234567");
+        server.verify();
+    }
+
+    @Test
+    void httpFailureLogsStatusWithoutResponseBody() {
+        server.expect(requestTo("https://carrier.test/"))
+                .andRespond(withStatus(HttpStatus.UNAUTHORIZED).body("test-key private response"));
+        assertEquals(DeliveryResult.uncertain(), client.send(recipient));
+        assertThat(logs.list.get(0).getFormattedMessage())
+                .contains("HTTP_ERROR", "401")
+                .doesNotContain("test-key", "private response");
+        server.verify();
+    }
+
+    @Test
+    void longCarrierErrorsArePreserved() {
+        server.expect(requestTo("https://carrier.test/"))
+                .andRespond(withSuccess("{\"success\":false,\"errors\":[\"" + "x".repeat(2000)
+                        + "\"]}", MediaType.APPLICATION_JSON));
+        assertEquals(DeliveryResult.rejected(), client.send(recipient));
+        String message = logs.list.get(0).getFormattedMessage();
+        assertThat(message).contains("x".repeat(2000));
+        server.verify();
+    }
+
+    @Test
+    void timeoutDiagnosticDoesNotExposeExceptionMessage() {
+        server.expect(requestTo("https://carrier.test/"))
+                .andRespond(request -> { throw new java.net.SocketTimeoutException("test-key private address"); });
+        assertEquals(DeliveryResult.uncertain(), client.send(recipient));
+        assertThat(logs.list.get(0).getFormattedMessage())
+                .contains("TRANSPORT_ERROR", "SocketTimeoutException")
+                .doesNotContain("test-key", "private address");
+        server.verify();
+    }
 }

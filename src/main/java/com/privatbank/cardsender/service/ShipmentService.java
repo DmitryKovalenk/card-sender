@@ -31,9 +31,19 @@ public class ShipmentService {
     public OrderStatus getStatus(String cardNumber) {
         CardOrder card = findGeneratedCard(cardNumber);
         return shipments.findByCardOrderId(card.id())
-                .map(shipment -> new OrderStatus(card.id(), cardNumber, shipment.status(),
-                        shipment.waybill(), shipment.audit().updatedAt()))
-                .orElseGet(() -> new OrderStatus(card.id(), cardNumber, null, null, card.audit().updatedAt()));
+                .map(shipment -> new OrderStatus(
+                        card.id(),
+                        cardNumber,
+                        shipment.status(),
+                        shipment.waybill(),
+                        shipment.audit().updatedAt()))
+                .orElseGet(() -> new OrderStatus(
+                        card.id(),
+                        cardNumber,
+                        null,
+                        null,
+                        card.audit().updatedAt())
+                );
     }
 
     private CardOrder findGeneratedCard(String cardNumber) {

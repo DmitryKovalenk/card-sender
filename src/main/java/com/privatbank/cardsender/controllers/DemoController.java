@@ -14,7 +14,10 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(value = "/demo", produces = MediaType.APPLICATION_JSON_VALUE)
-@Tag(name = "Демо", description = "Наповнює базу даних демонстраційними даними для тестування ендпоінтів")
+@Tag(
+        name = "Демо ( не обовʼязкове для використання)",
+        description = "Наповнює базу даних демонстраційними даними для тестування ендпоінтів"
+)
 public class DemoController {
 
     private final DemoDataService demoData;
@@ -26,15 +29,15 @@ public class DemoController {
      */
     @PostMapping("/generate")
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Генерує демонстраційні дані",
-            description = "Створює картки з згенерованими номерами і очікуваними відправками, " +
+    @Operation(summary = "Створюємо заявки на відправлення",
+            description = "Метод створює заявки на відправлення зі статусом PENDING, " +
                           "циклічно перебираючи активні типи карток. "
                           + "Уся партія скасовується, якщо будь-який запис не вдається. "
                           + "Отримувачі синтетичні; якщо шедулер Нової Пошти увіикнений, то він надішле ці заявки.")
     public DemoDataResponse generate(
             @Parameter(
-                    description = "Цифра - це кількість записів хочемо згенерувати",
-                    schema = @Schema(minimum = "1", maximum = "100")
+                    description = "Кількість пар «заявка на картку + заявка на відправлення»",
+                    schema = @Schema(minimum = "1", maximum = "1000")
             )
             @RequestParam(defaultValue = "100") int count) {
         return DemoDataResponse.from(demoData.generate(count));

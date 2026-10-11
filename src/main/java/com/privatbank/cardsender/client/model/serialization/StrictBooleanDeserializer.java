@@ -1,11 +1,10 @@
-package com.privatbank.cardsender.client.novaposhta.serialization;
+package com.privatbank.cardsender.client.model.serialization;
 
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;
 import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.ValueDeserializer;
 
-//TODO треба чекнути, можливо сильно заморочився
 public class StrictBooleanDeserializer extends ValueDeserializer<Boolean> {
 
     @Override

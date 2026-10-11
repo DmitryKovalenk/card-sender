@@ -17,19 +17,6 @@ services:
       retries: 10
       start_period: 30s
 
-  cloudbeaver:
-    image: dbeaver/cloudbeaver:latest
-    container_name: card-sender-cloudbeaver
-    profiles:
-      - tools
-    ports:
-      - "8978:8978"
-    volumes:
-      - cloudbeaver-data:/opt/cloudbeaver/workspace
-    depends_on:
-      oracle:
-        condition: service_healthy
-
 volumes:
   oracle-data:
   cloudbeaver-data:

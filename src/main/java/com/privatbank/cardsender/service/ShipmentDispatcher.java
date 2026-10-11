@@ -1,6 +1,7 @@
 package com.privatbank.cardsender.service;
 
 import com.privatbank.cardsender.client.WaybillGateway;
+import com.privatbank.cardsender.domain.DeliveryResult;
 import com.privatbank.cardsender.domain.ShipmentOrder;
 import com.privatbank.cardsender.repository.ShipmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +19,8 @@ public class ShipmentDispatcher {
             try {
                 dispatch(shipment);
             } catch (RuntimeException exception) {
-                // Continue the batch; claimed orders stay PROCESSING rather than being sent twice.
+                // Продовжити пакетну обробку;
+                // прийняті замовлення залишаються зі статусом «В обробці» (PROCESSING), а не надсилаються повторно.
                 LOG.error("Shipment {} processing failed ({})", shipment.id(), exception.getClass().getSimpleName());
             }
         }
@@ -28,7 +30,7 @@ public class ShipmentDispatcher {
         if (!shipments.claim(shipment.id())) {
             return;
         }
-        var result = gateway.send(shipment.recipient());
+        DeliveryResult result = gateway.send(shipment.recipient());
         switch (result.outcome()) {
             case ACCEPTED -> shipments.complete(shipment.id(), ShipmentOrder.Status.SENT, result.waybill());
             case REJECTED -> shipments.complete(shipment.id(), ShipmentOrder.Status.FAILED, null);

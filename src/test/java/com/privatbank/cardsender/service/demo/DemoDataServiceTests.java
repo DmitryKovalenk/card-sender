@@ -1,7 +1,7 @@
 package com.privatbank.cardsender.service.demo;
 
 import com.privatbank.cardsender.domain.*;
-import com.privatbank.cardsender.dto.CardTypes;
+import com.privatbank.cardsender.domain.CardTypes;
 import com.privatbank.cardsender.service.CardService;
 import com.privatbank.cardsender.service.ShipmentService;
 import org.junit.jupiter.api.Test;

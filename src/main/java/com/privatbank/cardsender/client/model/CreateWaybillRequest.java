@@ -1,4 +1,4 @@
-package com.privatbank.cardsender.client.novaposhta.dto;
+package com.privatbank.cardsender.client.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.privatbank.cardsender.delivery.NovaPoshtaProperties;
@@ -31,11 +31,6 @@ public record CreateWaybillRequest(
         @JsonProperty("SettlementType") String settlementType) {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
-    /**
-     * Це я готовий обговорити на співбесіді, коли ви будете питати мене за цей код, якщо будете звісно :D
-     * Можна було маппер використати, але я особисто обрав це метод через те, що він використовується лише раз,
-     * тому не бачу сенсу в маппері.
-     */
     public static CreateWaybillRequest from(NovaPoshtaProperties properties,
                                             Recipient recipient,
                                             LocalDate shipmentDate) {

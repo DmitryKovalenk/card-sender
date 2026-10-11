@@ -1,4 +1,4 @@
-package com.privatbank.cardsender.client.novaposhta.dto;
+package com.privatbank.cardsender.client.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

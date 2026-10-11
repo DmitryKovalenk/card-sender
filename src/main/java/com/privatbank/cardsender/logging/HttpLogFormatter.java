@@ -10,8 +10,12 @@ final class HttpLogFormatter {
     private static final String MASKED = "[MASKED]";
     private static final Pattern LONG_DIGITS = Pattern.compile("[0-9]{12,}");
     private static final Set<String> SENSITIVE_FIELDS = Set.of(
-            "cardnumber", "apikey", "password", "token",
-            "authorization");
+            "cardnumber",
+            "apikey",
+            "password",
+            "token",
+            "authorization"
+    );
     private final ObjectMapper mapper = new ObjectMapper();
 
     String body(byte[] body, String contentType) {
@@ -26,16 +30,19 @@ final class HttpLogFormatter {
         }
         try {
             Object value = mapper.readValue(body, Object.class);
-            return path(mapper.writeValueAsString(mask(value)));
+            return sanitize(mapper.writeValueAsString(mask(value)));
         } catch (RuntimeException exception) {
             return "[unreadable JSON omitted]";
         }
     }
 
     String path(String value) {
-        return LONG_DIGITS.matcher(value).replaceAll(match -> match.group().length() == 16
-                        ? maskCardNumber(match.group()) : "***")
-                .replaceAll("[\\p{Cntrl}\\u2028\\u2029]", "_");
+        return sanitize(LONG_DIGITS.matcher(value).replaceAll(match -> match.group().length() == 16
+                        ? maskCardNumber(match.group()) : "***"));
+    }
+
+    private String sanitize(String value) {
+        return value.replaceAll("[\\p{Cntrl}\\u2028\\u2029]", "_");
     }
 
     private String maskCardNumber(Object value) {
@@ -55,15 +62,26 @@ final class HttpLogFormatter {
                         .replace("-", "")
                         .toLowerCase(Locale.ROOT);
                 if ("cardnumber".equals(normalized)) {
-                    result.put(name, maskCardNumber(field));
+                    result.put(path(name), maskCardNumber(field));
+                } else if ("phone".equals(normalized) && field instanceof String phone) {
+                    result.put(path(name), sanitize(phone));
+                } else if ("waybill".equals(normalized) && field instanceof String number
+                        && number.matches("[0-9]{1,30}")) {
+                    result.put(path(name), number);
                 } else {
-                    result.put(name, SENSITIVE_FIELDS.contains(normalized) ? MASKED : mask(field));
+                    result.put(path(name), SENSITIVE_FIELDS.contains(normalized) ? MASKED : mask(field));
                 }
             });
             return result;
         }
         if (value instanceof List<?> values) {
             return values.stream().map(this::mask).toList();
+        }
+        if (value instanceof String text) {
+            return path(text);
+        }
+        if (value instanceof Number number && LONG_DIGITS.matcher(number.toString()).find()) {
+            return path(number.toString());
         }
         return value;
     }

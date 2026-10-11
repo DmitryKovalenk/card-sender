@@ -1,7 +1,7 @@
 package com.privatbank.cardsender;
 
 import com.privatbank.cardsender.domain.*;
-import com.privatbank.cardsender.dto.CardTypes;
+import com.privatbank.cardsender.domain.CardTypes;
 import com.privatbank.cardsender.repository.CardOrderRepository;
 import com.privatbank.cardsender.repository.CardTypeRepository;
 import com.privatbank.cardsender.repository.ShipmentRepository;

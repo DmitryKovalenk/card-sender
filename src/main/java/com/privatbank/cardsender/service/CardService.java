@@ -62,10 +62,8 @@ public class CardService {
     }
 
     /**
-     * Generates numbers in one transaction for pending orders that can be locked immediately.
-     * Orders locked by concurrent transactions are skipped.
-     * <p>
      * Створює номери карток в одній транзакції для замовлень, які очікують на обробку і можуть бути заблоковані негайно.
+     * Замовлення, заблоковані паралельними транзакціями, пропускаються.
      */
     @Transactional
     public int generatePending(Operator operator) {

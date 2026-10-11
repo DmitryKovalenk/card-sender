@@ -29,13 +29,21 @@ public class CardController {
      * ендпоінт просто повертає список типів карток, які є в базі даних.
      */
     @GetMapping("/card-types")
-    @Operation(summary = "List card types", description = "Lists card types and BINs; create orders using the corresponding cardType enum code.")
+    @Operation(
+            summary = "Список типів карток",
+            description = "Список типів карток та бінів; Список використовується для створення заявок на картки, " +
+                          "та є свого роду довідником"
+    )
     public List<CardTypeResponse> types() {
-        return cards.listTypes().stream().map(CardTypeResponse::from).toList();
+        return cards.listTypes()
+                .stream()
+                .map(CardTypeResponse::from)
+                .toList();
     }
 
     /**
      * Тут ми створюємо заявку на картку, яка ще не має номера.
+     * Також вирішив що тут більше підходить статус 201 Created, бо ми створюємо новий ресурс у базі даних.
      */
     @PostMapping("/card-orders")
     @ResponseStatus(HttpStatus.CREATED)
@@ -51,12 +59,13 @@ public class CardController {
     }
 
     /**
-     * Дістаємо заявку на картку із БД по її id
+     * Повертає заявку на картку за її ідентифікатором у поточному стані.
      */
     @GetMapping("/card-orders/{id}")
     @Operation(
             summary = "Отримати заявку на картку по її id",
-            description = "Тут вже у відповіді має бути згенерований номер картки."
+            description = "Повертає заявку зі статусом PENDING або GENERATED. Для PENDING номер картки відсутній; " +
+                          "для GENERATED відповідь містить згенерований номер картки."
     )
     public CardOrderResponse order(@PathVariable long id) {
         return CardOrderResponse.from(cards.getOrder(id));

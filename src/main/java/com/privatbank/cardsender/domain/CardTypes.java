@@ -1,4 +1,4 @@
-package com.privatbank.cardsender.dto;
+package com.privatbank.cardsender.domain;
 
 import java.util.Arrays;
 import java.util.Optional;

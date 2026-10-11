@@ -10,6 +10,6 @@ public class DemoRecipientFactory {
 
     public Recipient create(int index) {
         return new Recipient("Test", "User", String.format(Locale.ROOT, "38067%07d", index),
-                "Київ", Integer.toString(index % 100 + 1));
+                "Дніпро", Integer.toString(index % 100 + 1));
     }
 }

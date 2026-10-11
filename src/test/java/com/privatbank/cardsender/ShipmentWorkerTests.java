@@ -2,7 +2,7 @@ package com.privatbank.cardsender;
 
 import com.privatbank.cardsender.client.WaybillGateway;
 import com.privatbank.cardsender.domain.*;
-import com.privatbank.cardsender.dto.CardTypes;
+import com.privatbank.cardsender.domain.CardTypes;
 import com.privatbank.cardsender.repository.ShipmentRepository;
 import com.privatbank.cardsender.service.CardService;
 import com.privatbank.cardsender.service.ShipmentDispatcher;

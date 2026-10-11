@@ -34,7 +34,7 @@ public class DeliveryConfiguration {
     @Bean
     @ConditionalOnProperty(name = "nova-poshta.enabled", havingValue = "true")
     WaybillGateway deliveryGateway(NovaPoshtaProperties properties, RestClient.Builder builder) {
-        var factory = new SimpleClientHttpRequestFactory();
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(properties.connectTimeout());
         factory.setReadTimeout(properties.readTimeout());
         // використав Europe/Kiev замість Europe/Kyiv щоб не було проблем при зборці з Maven та запуску тестів,

@@ -1,7 +1,7 @@
 package com.privatbank.cardsender.dto.request;
 
 import com.privatbank.cardsender.domain.CreateCardInput;
-import com.privatbank.cardsender.dto.CardTypes;
+import com.privatbank.cardsender.domain.CardTypes;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

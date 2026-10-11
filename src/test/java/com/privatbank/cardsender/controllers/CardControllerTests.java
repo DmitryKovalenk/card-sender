@@ -5,7 +5,7 @@ import com.privatbank.cardsender.domain.BusinessException;
 import com.privatbank.cardsender.domain.CardOrder;
 import com.privatbank.cardsender.domain.CreateCardInput;
 import com.privatbank.cardsender.domain.Operator;
-import com.privatbank.cardsender.dto.CardTypes;
+import com.privatbank.cardsender.domain.CardTypes;
 import com.privatbank.cardsender.service.CardService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
