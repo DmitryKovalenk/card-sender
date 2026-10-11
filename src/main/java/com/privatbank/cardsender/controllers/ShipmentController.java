@@ -49,13 +49,18 @@ public class ShipmentController {
             description = "Повертає значення CARD_GENERATED до моменту запиту на відправлення; " +
                           "в інших випадках — PENDING, PROCESSING, SENT або FAILED. " +
                           "Статус SENT означає, що було створено накладну, а не те, що посилку доставлено. " +
-                          "Якщо результат дій перевізника невизначений, статус залишається PROCESSING для подальшої звірки.")
+                          "Якщо результат дій перевізника невизначений, статус залишається PROCESSING для подальшої звірки. " +
+                          "Необов’язковий параметр waybill перевіряє відповідність номера ЕН картці; " +
+                          "некоректний номер або невідповідність повертає 400. Це не відстеження доставки у перевізника.")
     public OrderStatusResponse status(
-            @Parameter(description = "The generated 16-digit card number", example = "4444440000000008")
-            @PathVariable String cardNumber) {
+            @Parameter(description = "Номер картки (16 цифр)", example = "4444440000000008")
+            @PathVariable String cardNumber,
+            @Parameter(description = "Необов’язковий номер ЕН: від 1 до 30 цифр, має відповідати відправленню картки",
+                    example = "20400000000001")
+            @RequestParam(required = false) String waybill) {
         if (!cardNumber.matches("[0-9]{16}")) {
             throw new BusinessException(BusinessException.Kind.INVALID_REQUEST, "Expected a 16-digit card number");
         }
-        return OrderStatusResponse.from(shipments.getStatus(cardNumber));
+        return OrderStatusResponse.from(shipments.getStatus(cardNumber, waybill));
     }
 }

@@ -32,12 +32,18 @@ docker compose version
 Спочатку запустіть Docker Desktop або Docker Engine, потім виконайте:
 
 ```sh
-docker compose up -d --wait --wait-timeout 300 oracle
+docker compose up -d oracle
 docker compose ps
 ```
 
-`--wait` очікує проходження перевірки працездатності контейнера. Перший запуск Oracle
-може тривати кілька хвилин. Якщо очікування завершилося за тайм-аутом, перевірте журнал:
+Перший запуск Oracle може тривати кілька хвилин. Перед запуском Java дочекайтеся статусу
+`healthy`; повторюйте перевірку, доки контейнер не буде готовий:
+
+```sh
+docker inspect --format '{{.State.Health.Status}}' card-sender-oracle
+```
+
+Якщо статус довго залишається `starting` або став `unhealthy`, перевірте журнал:
 
 ```sh
 docker compose logs --tail=100 oracle
@@ -191,6 +197,27 @@ curl -sS "http://localhost:8080/api/orders/status/$CARD_NUMBER"
 Помилки API мають формат `{"error":"опис помилки"}`. Некоректний запит повертає `400`,
 відсутня заявка — `404`, повторна заявка на відправлення — `409`.
 
+### Перевірка статусу за номером картки та номером ЕН
+
+Номер картки залишається обов’язковим. За бажанням додайте параметр `waybill`, щоб перевірити,
+чи належить указана накладна відправленню цієї картки:
+
+```sh
+# Використовуйте CARD_NUMBER із попереднього кроку та фактичний номер ЕН із відповіді API.
+WAYBILL='REPLACE_WITH_WAYBILL'
+curl -sS "http://localhost:8080/api/orders/status/$CARD_NUMBER?waybill=$WAYBILL"
+```
+
+Без `waybill` endpoint працює як раніше. Якщо параметр передано, він має містити від 1 до 30 цифр
+і точно збігатися зі збереженим номером ЕН, включно з початковими нулями.
+Порожнє або некоректне значення повертає `400`. Невідповідність, відсутність відправлення
+чи ще не створена ЕН також повертає `400` з повідомленням
+`Waybill does not match the shipment for this card`. Для невідомої картки та коректного формату ЕН
+повертається `404`. Формат успішної відповіді не змінюється.
+
+Це перевірка відповідності даних у нашій БД. Вона не викликає API відстеження Нової Пошти
+і не повертає фактичне місцезнаходження посилки.
+
 ### Демонстраційні дані
 
 ```sh
@@ -338,10 +365,10 @@ Java-застосунок зупиняється через `Ctrl+C` у терм
 docker compose stop oracle
 ```
 
-Запустити його знову та дочекатися готовності:
+Запустити його знову (перед запуском Java дочекайтеся `healthy`, як описано вище):
 
 ```sh
-docker compose up -d --wait --wait-timeout 300 oracle
+docker compose up -d oracle
 ```
 
 Видалити контейнери й мережу, зберігши дані БД:
@@ -355,7 +382,8 @@ docker compose down
 ```sh
 # Спочатку зупиніть Java-застосунок.
 docker compose down -v
-docker compose up -d --wait --wait-timeout 300 oracle
+docker compose up -d oracle
+# Дочекайтеся healthy: docker inspect --format '{{.State.Health.Status}}' card-sender-oracle
 NOVA_POSHTA_ENABLED=false ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
