@@ -64,6 +64,16 @@ class SwaggerDocumentationTests {
         assertTrue(paths.path("/api/card-orders/{id}").has("get"));
         assertTrue(paths.path("/api/card-orders/generate").has("post"));
         assertTrue(paths.path("/api/orders/status/{cardNumber}").has("get"));
+        var statusParameters = paths.path("/api/orders/status/{cardNumber}").path("get").path("parameters");
+        boolean optionalWaybillDocumented = false;
+        for (var parameter : statusParameters) {
+            if ("waybill".equals(parameter.path("name").asText())) {
+                assertEquals("query", parameter.path("in").asText());
+                assertFalse(parameter.path("required").asBoolean());
+                optionalWaybillDocumented = true;
+            }
+        }
+        assertTrue(optionalWaybillDocumented);
         assertTrue(paths.path("/api/shipment-orders").path("post").path("responses").has("201"));
         var create = paths.path("/api/card-orders").path("post");
         var header = create.path("parameters").get(0);

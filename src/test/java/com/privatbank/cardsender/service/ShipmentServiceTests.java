@@ -104,6 +104,57 @@ class ShipmentServiceTests {
         assertEquals(timestamp, status.updatedAt());
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"1", "00123", "123456789012345678901234567890"})
+    void matchingWaybillReturnsStoredStatus(String waybill) {
+        var card = generatedCard();
+        when(shipments.findByCardOrderId(1)).thenReturn(Optional.of(new ShipmentOrder(2, 1, recipient,
+                ShipmentOrder.Status.SENT, waybill, card.audit())));
+        assertEquals(service.getStatus(number), service.getStatus(number, waybill));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " ", "abc", "1234567890123456789012345678901", "+123", " 00123"})
+    void malformedWaybillIsRejectedBeforeDatabaseLookup(String waybill) {
+        assertEquals(BusinessException.Kind.INVALID_REQUEST, assertThrows(BusinessException.class,
+                () -> service.getStatus(number, waybill)).kind());
+        verifyNoInteractions(cards, shipments);
+    }
+
+    @Test
+    void mismatchedWaybillDoesNotReturnAnotherShipmentsStatus() {
+        var card = generatedCard();
+        when(shipments.findByCardOrderId(1)).thenReturn(Optional.of(new ShipmentOrder(2, 1, recipient,
+                ShipmentOrder.Status.SENT, "00123", card.audit())));
+        assertEquals(BusinessException.Kind.INVALID_REQUEST, assertThrows(BusinessException.class,
+                () -> service.getStatus(number, "123")).kind());
+    }
+
+    @Test
+    void suppliedWaybillIsRejectedWhenShipmentDoesNotExist() {
+        generatedCard();
+        assertEquals(BusinessException.Kind.INVALID_REQUEST, assertThrows(BusinessException.class,
+                () -> service.getStatus(number, "00123")).kind());
+        assertNull(service.getStatus(number, null).shipmentStatus());
+    }
+
+    @Test
+    void suppliedWaybillIsRejectedBeforeWaybillCreation() {
+        var card = generatedCard();
+        when(shipments.findByCardOrderId(1)).thenReturn(Optional.of(new ShipmentOrder(2, 1, recipient,
+                ShipmentOrder.Status.PENDING, null, card.audit())));
+        assertEquals(BusinessException.Kind.INVALID_REQUEST, assertThrows(BusinessException.class,
+                () -> service.getStatus(number, "00123")).kind());
+        assertEquals(ShipmentOrder.Status.PENDING, service.getStatus(number, null).shipmentStatus());
+    }
+
+    @Test
+    void unknownCardStillReturnsNotFoundWhenWaybillSupplied() {
+        assertEquals(BusinessException.Kind.NOT_FOUND, assertThrows(BusinessException.class,
+                () -> service.getStatus(number, "00123")).kind());
+        verifyNoInteractions(shipments);
+    }
+
     private CardOrder generatedCard() {
         var timestamp = java.time.OffsetDateTime.parse("2026-10-09T12:00:00Z");
         var card = new CardOrder(1, 1, "Test", "User", number, CardOrder.Status.GENERATED, timestamp,

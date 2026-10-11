@@ -46,6 +46,23 @@ public class ShipmentService {
                 );
     }
 
+    /** Перевіряє, що переданий номер ЕН належить відправленню цієї картки. */
+    public OrderStatus getStatus(String cardNumber, String waybill) {
+        if (waybill == null) {
+            return getStatus(cardNumber);
+        }
+        if (!waybill.matches("[0-9]{1,30}")) {
+            throw new BusinessException(BusinessException.Kind.INVALID_REQUEST,
+                    "Expected a waybill number containing 1 to 30 digits");
+        }
+        OrderStatus status = getStatus(cardNumber);
+        if (!waybill.equals(status.waybill())) {
+            throw new BusinessException(BusinessException.Kind.INVALID_REQUEST,
+                    "Waybill does not match the shipment for this card");
+        }
+        return status;
+    }
+
     private CardOrder findGeneratedCard(String cardNumber) {
         return cards.findByCardNumber(cardNumber)
                 .filter(card -> card.status() == CardOrder.Status.GENERATED)

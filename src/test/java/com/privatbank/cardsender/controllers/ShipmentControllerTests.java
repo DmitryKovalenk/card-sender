@@ -67,7 +67,7 @@ class ShipmentControllerTests {
 
     @Test
     void generatedCardWithoutShipmentHasPublicStatus() throws Exception {
-        when(shipments.getStatus(number)).thenReturn(new OrderStatus(7, number, null, null, null));
+        when(shipments.getStatus(number, null)).thenReturn(new OrderStatus(7, number, null, null, null));
         mvc.perform(get("/api/orders/status/" + number)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.STATUS").value("CARD_GENERATED"))
                 .andExpect(jsonPath("$.CARD_NUMBER").value(number));
@@ -76,9 +76,40 @@ class ShipmentControllerTests {
     @ParameterizedTest
     @EnumSource(ShipmentOrder.Status.class)
     void exposesEveryShipmentStatus(ShipmentOrder.Status state) throws Exception {
-        when(shipments.getStatus(number)).thenReturn(new OrderStatus(7, number, state,
+        when(shipments.getStatus(number, null)).thenReturn(new OrderStatus(7, number, state,
                 state == ShipmentOrder.Status.SENT ? "00123" : null, null));
         mvc.perform(get("/api/orders/status/" + number)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.STATUS").value(state.name()));
+    }
+
+    @Test
+    void optionalWaybillIsPassedWithoutLosingLeadingZeros() throws Exception {
+        when(shipments.getStatus(number, "00123"))
+                .thenReturn(new OrderStatus(7, number, ShipmentOrder.Status.SENT, "00123", null));
+        mvc.perform(get("/api/orders/status/" + number).param("waybill", "00123"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.WAYBILL").value("00123"));
+        verify(shipments).getStatus(number, "00123");
+    }
+
+    @Test
+    void waybillMismatchReturnsBadRequestWithErrorBody() throws Exception {
+        when(shipments.getStatus(number, "99999")).thenThrow(new BusinessException(
+                BusinessException.Kind.INVALID_REQUEST, "Waybill does not match the shipment for this card"));
+        mvc.perform(get("/api/orders/status/" + number).param("waybill", "99999"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Waybill does not match the shipment for this card"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " ", "invalid", "1234567890123456789012345678901"})
+    void malformedWaybillProduces400ThroughRealService(String waybill) throws Exception {
+        var cards = mock(com.privatbank.cardsender.repository.CardOrderRepository.class);
+        var repository = mock(com.privatbank.cardsender.repository.ShipmentRepository.class);
+        var realMvc = MockMvcBuilders.standaloneSetup(new ShipmentController(new ShipmentService(cards, repository)))
+                .setControllerAdvice(new ApiExceptionHandler()).build();
+        realMvc.perform(get("/api/orders/status/" + number).param("waybill", waybill))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Expected a waybill number containing 1 to 30 digits"));
+        verifyNoInteractions(cards, repository);
     }
 }
